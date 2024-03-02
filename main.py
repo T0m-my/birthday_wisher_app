@@ -3,48 +3,36 @@ import datetime as dt
 import smtplib
 import random
 
-SMTP_SERVER = 'smtp.gmail.com'
 PORT = 587
-MY_EMAIL_ADDR = 'tommymumena@gmail.com'
-MY_PASSWORD = ''
-# RECEIVER_EMAIL_ADDR = 'thomas.mumena@yahoo.com'
+SMTP_SERVER = 'smtp.gmail.com'
+SENDER_EMAIL_ADDR = ''
+SENDER_PASSWORD = ''
 EMAIL_SUBJECT = 'Happy Birthday!'
-today_birthdays = []
 
-# 1. Update the birthdays.csv
+# create tuple (current_day, current_day)
+today_date = dt.datetime.now()
+today_date_tuple = (today_date.day, today_date.month)
 
-# 2. Check if today matches a birthday in the birthdays.csv
-
-# 3. If step 2 is true, pick a random letter from letter templates and replace the [NAME] with the person's
-# actual name from birthdays.csv
-
-# 4. Send the letter generated in step 3 to that person's email address.
-
-date_today = dt.datetime.now()
-# print(date_today.date())
-
+# create list of tuples with elements of ((day, month),row) from birthdays.csv
 birthday_data = pandas.read_csv('./birthdays.csv')
-for _, row_data in birthday_data.iterrows():
-    birthday = dt.datetime(year=row_data['year'], month=row_data['month'], day=row_data['day'])
-    # print(birthday)
-    if birthday.month == date_today.month and birthday.day == date_today.day:
-        today_birthdays.append(row_data)
+birthdays = [((row_data['day'], row_data['month']), row_data) for (index, row_data) in birthday_data.iterrows()]
 
+# filter out birthdays that match today
+today_birthdays = [birthday[1] for birthday in birthdays if birthday[0] == today_date_tuple]
 
-for person in today_birthdays:
-    randomNum = random.choice(range(1, 4))
+for birthday_person in today_birthdays:
+    # pick random letter template and replace with actual name
+    randomNum = random.randint(1, 3)
     with open(f'./letter_templates/letter_{randomNum}.txt') as letter_file:
-        # letter_content = [content.strip() for content in letter_file.readlines()]
         letter_content = letter_file.read()
-        new_letter_content = letter_content.replace('[NAME]', f'{person['name']}')
-        # print(new_letter_content)
-        # print(person['email'])
+        new_letter_content = letter_content.replace('[NAME]', f'{birthday_person['name']}')
 
+    # send email
     with smtplib.SMTP(host=SMTP_SERVER, port=PORT) as connection:
         connection.starttls()
-        connection.login(user=MY_EMAIL_ADDR, password=MY_PASSWORD)
+        connection.login(user=SENDER_EMAIL_ADDR, password=SENDER_PASSWORD)
         connection.sendmail(
-            from_addr=MY_EMAIL_ADDR,
-            to_addrs=person['email'],
+            from_addr=SENDER_EMAIL_ADDR,
+            to_addrs=birthday_person['email'],
             msg=f'Subject:{EMAIL_SUBJECT}\n\n{new_letter_content}'.encode('utf-8')
         )
